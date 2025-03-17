@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz de Futebol Interativo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="quiz-container">
+        <div class="welcome-section" id="welcome-section">
+            <h1>Bem-vindo ao Quiz de Futebol! <i class="fas fa-futbol"></i></h1>
+            <input type="text" id="user-name" placeholder="Digite seu nome" maxlength="20">
+            <button onclick="startQuiz()">Iniciar Quiz <i class="fas fa-play"></i></button>
+        </div>
+        <div class="quiz-section" id="quiz-section" style="display: none;">
+            <h1 id="welcome-message"></h1>
+            <div class="score">Pontuação: <span id="score">0</span> <i class="fas fa-star"></i></div>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress" id="progress"></div>
+                </div>
+            </div>
+            <div class="question" id="question"></div>
+            <div class="options" id="options"></div>
+            <div class="result" id="result"></div>
+            <button id="next-btn" style="display: none;">Próxima Pergunta <i class="fas fa-arrow-right"></i></button>
+            <button id="restart-btn" style="display: none; background: linear-gradient(45deg, #e74c3c, #c0392b);" onclick="restartQuiz()">Refazer Quiz <i class="fas fa-redo"></i></button>
+            <div class="history" id="history"></div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
