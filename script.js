@@ -53,11 +53,28 @@ function shuffleQuestions(questions) {
     });
 }
 
+// Função para formatar o tempo em minutos e segundos
+function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+}
+
+// Função para calcular a pontuação baseada em acertos e tempo
+function calculateScore(correctAnswers, timeInSeconds) {
+    const baseScore = correctAnswers * 10; // 10 pontos por acerto
+    const timeBonus = Math.max(0, 300 - timeInSeconds); // Bônus: 300 - tempo, mínimo 0
+    return baseScore + timeBonus;
+}
+
 let questions = [];
 let currentQuestion = 0;
 let score = 0;
 let totalQuestions = 0;
 let quizHistory = JSON.parse(localStorage.getItem('quizHistory')) || { attempts: 0, totalScore: 0 };
+let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+let startTime;
+let timerInterval;
 
 const welcomeSection = document.getElementById('welcome-section');
 const quizSection = document.getElementById('quiz-section');
@@ -66,13 +83,34 @@ const questionElement = document.getElementById('question');
 const optionsElement = document.getElementById('options');
 const scoreElement = document.getElementById('score');
 const progressElement = document.getElementById('progress');
+const questionCounter = document.getElementById('question-counter');
 const resultElement = document.getElementById('result');
 const nextButton = document.getElementById('next-btn');
 const restartButton = document.getElementById('restart-btn');
 const historyElement = document.getElementById('history');
+const leaderboardElement = document.getElementById('leaderboard');
+const leaderboardBody = document.getElementById('leaderboard-body');
 
 function updateHistory() {
     historyElement.innerHTML = `Histórico: ${quizHistory.attempts} pessoas fizeram o quiz. Média de acertos: ${(quizHistory.attempts > 0 ? (quizHistory.totalScore / (quizHistory.attempts * totalQuestions)).toFixed(2) : 0)} perguntas.`;
+}
+
+function updateLeaderboard() {
+    // Ordenar leaderboard por pontuação (maior para menor)
+    leaderboard.sort((a, b) => b.score - a.score);
+    
+    leaderboardBody.innerHTML = '';
+    leaderboard.forEach((entry, index) => {
+        const row = document.createElement('tr');
+        const isLeader = index === 0; // O primeiro após ordenação é o líder
+        row.innerHTML = `
+            <td ${isLeader ? 'class="leader"' : ''}>${entry.name}${isLeader ? ' <i class="fas fa-crown"></i>' : ''}</td>
+            <td>${entry.time}</td>
+            <td>${entry.correct}/${totalQuestions}</td>
+            <td>${entry.score}</td>
+        `;
+        leaderboardBody.appendChild(row);
+    });
 }
 
 function startQuiz() {
@@ -90,6 +128,12 @@ function startQuiz() {
     quizSection.style.display = 'block';
     welcomeMessage.innerHTML = `Bem-vindo, ${userName}! <i class="fas fa-futbol"></i>`;
     restartButton.style.display = 'none';
+    leaderboardElement.style.display = 'none';
+    startTime = Date.now();
+    timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        // Pode exibir o tempo em tempo real se desejar, mas aqui só usaremos no final
+    }, 1000);
     loadQuestion();
     updateHistory();
 }
@@ -117,7 +161,7 @@ function checkAnswer(selectedIndex) {
     const options = optionsElement.children;
 
     if (selectedIndex === q.correct) {
-        score += 10;
+        score += 10; // Apenas o score base é atualizado aqui
         scoreElement.textContent = score;
         options[selectedIndex].classList.add('correct');
         resultElement.textContent = 'Correto!';
@@ -141,6 +185,7 @@ function checkAnswer(selectedIndex) {
 function updateProgress() {
     const progress = ((currentQuestion + 1) / totalQuestions) * 100;
     progressElement.style.width = `${progress}%`;
+    questionCounter.textContent = `Pergunta ${currentQuestion + 1} de ${totalQuestions}`;
 }
 
 function nextQuestion() {
@@ -153,16 +198,37 @@ function nextQuestion() {
 }
 
 function showFinalResult() {
+    const endTime = Date.now();
+    const elapsedTime = Math.floor((endTime - startTime) / 1000);
+    clearInterval(timerInterval);
+
+    const correctAnswers = score / 10; // Número de acertos
+    const finalScore = calculateScore(correctAnswers, elapsedTime);
+
     questionElement.style.display = 'none';
     optionsElement.style.display = 'none';
     nextButton.style.display = 'none';
-    resultElement.innerHTML = `Quiz Finalizado! Pontuação Final: ${score}/${totalQuestions * 10} <i class="fas fa-trophy"></i>`;
+    resultElement.innerHTML = `Quiz Finalizado! Pontuação Final: ${finalScore} <i class="fas fa-trophy"></i>`;
     resultElement.style.background = '#fff';
     restartButton.style.display = 'block';
+
+    const userName = document.getElementById('user-name').value.trim();
+    const entry = {
+        name: userName,
+        time: formatTime(elapsedTime),
+        correct: correctAnswers,
+        score: finalScore
+    };
+    leaderboard.push(entry);
+    localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+
     quizHistory.attempts++;
-    quizHistory.totalScore += score / 10;
+    quizHistory.totalScore += correctAnswers; // Apenas os acertos para o histórico geral
     localStorage.setItem('quizHistory', JSON.stringify(quizHistory));
+
+    leaderboardElement.style.display = 'block';
     updateHistory();
+    updateLeaderboard();
 }
 
 function restartQuiz() {
@@ -173,3 +239,4 @@ function restartQuiz() {
 
 nextButton.addEventListener('click', nextQuestion);
 updateHistory();
+updateLeaderboard();
